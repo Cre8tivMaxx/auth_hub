@@ -3,13 +3,12 @@
 Single Sign On application, that manages login to provided frappe sites by one click!
 
 ### Installation
-
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+Make sure you are in your frappe-bench dir.
 
 ```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app auth_hub
+cd ~/frappe-bench
+bench get-app https://github.com/Cre8tivMaxx/auth_hub --branch develop
+bench --site YOUR_SITE_NAME install-app auth_hub
 ```
 
 ### Contributing
@@ -20,14 +19,3 @@ This app uses `pre-commit` for code formatting and linting. Please [install pre-
 cd apps/auth_hub
 pre-commit install
 ```
-
-Pre-commit is configured to use the following tools for checking and formatting your code:
-
-- ruff
-- eslint
-- prettier
-- pyupgrade
-
-### License
-
-mit
