@@ -40,6 +40,7 @@ def ensure_signed_up(email):
     return bool(frappe.db.exists("User", email))
 
 
+@frappe.whitelist(allow_guest=True)
 def create_user(user: dict):
     """Create a new user on the system.
 
