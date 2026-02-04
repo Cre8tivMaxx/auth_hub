@@ -9,18 +9,18 @@ EXCLUDE = {"Guest", "All", "Administrator", "Employee"}
 
 
 @frappe.whitelist(allow_guest=True)
-def create_permissions(profile_name=None):
+def create_permissions(profile_name="System Manager"):
     """Create a role profile and module profile for the given profile name
 
     Args:
         profile_name: The name of the Role, Module Profiles
         choose from (Admin, System Manager) default is System Manager
     Note:
-        Accessible through <website>/api/method/auth_hub.permissions.create_permissions?profile_name={Admin or System Manager}
+        Accessible through <website>/api/method/auth_hub.api.permissions.create_permissions?profile_name={Admin or System Manager}
     """
-    profile_name = frappe.scrub(profile_name) if profile_name else ""
+    profile_name = frappe.scrub(profile_name)
     profile_title = frappe.unscrub(profile_name)
-    if not profile_name or profile_name == "system_manager":
+    if profile_name == "system_manager":
         create_system_manager_permission(profile_title)
 
     if profile_name == "admin":
@@ -65,14 +65,16 @@ def _create_role_profile(role_profile_name: str, roles: list):
     Args:
         role_profile_name (str): Module Profile name (i.e `Admin`)
         roles (list): list of roles to be included i.e ["System Manager", "Sales Manager"]
-                refer to `Role` DocType.
+                                        refer to `Role` DocType.
     """
     if frappe.db.exists("Role Profile", role_profile_name):
         # TODO: This one may update the role profile
         return
 
     # Clear existing roles in the profile
-    role_profile = frappe.get_doc("Role Profile", role_profile_name)
+    role_profile = frappe.get_doc(
+        doctype="Role Profile", role_profile=role_profile_name
+    )
     role_profile.set("roles", [])
     for role in roles:
         if frappe.db.exists("Role", role):
@@ -81,18 +83,25 @@ def _create_role_profile(role_profile_name: str, roles: list):
     role_profile.save(ignore_permissions=True)
 
 
-def _create_module_profile(module_profile_name: str, block_modules: list):
+def _create_module_profile(m_profile_name: str, block_modules: list):
     """helper function to create a module profile with the given name and block the given list of modules
 
     Args:
-        module_profile_name (str): Module Profile name (i.e `Admin`)
+        m_profile_name (str): Module Profile name (i.e `Admin`)
         block_modules (list): modules to be blocked
-                if block_modules = ["Accounts", "Buying"] then the module profile will have all permissions except ["Accounts", "Buying"]
+        if block_modules = ["Accounts", "Buying"] then the module profile will have all permissions except ["Accounts", "Buying"]
     """
-    if frappe.db.exists("Module Profile", module_profile_name):
+    if frappe.db.exists("Module Profile", m_profile_name):
         return
-    module_profile = frappe.get_doc("Module Profile", module_profile_name)
-    module_profile.set("block_modules", block_modules)
+
+    module_profile = frappe.get_doc(
+        {
+            "doctype": "Module Profile",
+            "module_profile_name": m_profile_name,
+            "block_modules": [{"module": m} for m in block_modules],
+        }
+    )
+
     module_profile.save(ignore_permissions=True)
 
 
@@ -109,13 +118,16 @@ def ensure_permission_exists(profile_name="System Manager"):
 
     Example:
     >>> ensure_permission_exists("Admin")
-    {"Role Profile"}
+    {"message":{"Role Profile":true,"Module Profile":false}}
 
     Note:
-    Accessible through <website>/api/method/auth_hub.permissions.ensure_permission_exists?profile_name={profile_name}
+    Accessible through <website>/api/method/auth_hub.api.permissions.ensure_permission_exists?profile_name={profile_name}
     """
-    profile_name = frappe.unscrub(profile_name)
     return {
-        "Role Profile": bool(frappe.db.exists("Role Profile", profile_name)),
-        "Module Profile": bool(frappe.db.exists("Module Profile", profile_name)),
+        f"Role Profile {profile_name}": bool(
+            frappe.db.exists("Role Profile", profile_name)
+        ),
+        f"Module Profile {profile_name}": bool(
+            frappe.db.exists("Module Profile", profile_name)
+        ),
     }
