@@ -59,3 +59,36 @@ def create_user(user: dict):
         # TODO: Log the error.
         return False
     return True
+
+
+@frappe.whitelist(True)
+def create_temp_login_link(email: str, expiry: float = 1.5):
+    """create a temp login link for user using his email
+
+    Args:
+        email (str): email address of user
+        expiry (float, optional): expiry date of the login link in minutes. Defaults to 1.5.
+
+    Returns:
+        str: the login end point with key.
+        example:
+
+    Note:
+        Acessible through <website>/api/method/auth_hub.api.api.create_temp_login_link?email={test@example.com}
+    """
+    if not frappe.db.exists("User", email):
+        frappe.throw(
+            (f"User with email address {email} does not exist"),
+            frappe.DoesNotExistError,
+        )
+    if frappe.get_value("User", email, "name") == "Administrator":
+        frappe.throw(
+            "You are not permitted to login as Administrator, please use your own email",
+            frappe.PermissionError,
+        )
+
+    key = frappe.generate_hash()
+    frappe.cache.set_value(
+        f"one_time_login_key:{key}", email, expires_in_sec=int(expiry * 60)
+    )
+    return f"/api/method/frappe.www.login.login_via_key?key={key}"
