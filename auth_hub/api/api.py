@@ -90,3 +90,27 @@ def create_temp_login_link(email: str, expiry: float = 1.5):
 	key = frappe.generate_hash()
 	frappe.cache.set_value(f"one_time_login_key:{key}", email, expires_in_sec=int(expiry * 60))
 	return f"/api/method/frappe.www.login.login_via_key?key={key}"
+
+
+def get_installed_apps():
+	"""Returns a list of installed apps
+
+	Example:
+	>>> get_installed_apps()
+	[
+	    {
+	        "app_name": "frappe",
+	        "app_version": "14.0.0"
+	    }
+	]
+
+	Returns:
+	    list: list of installed apps
+
+	Note:
+	    Accessible through <website>/api/method/auth_hub.api.get_installed_apps
+
+	"""
+	apps = frappe.get_all("Installed Application", fields=["app_name", "app_version"])
+
+	return apps
