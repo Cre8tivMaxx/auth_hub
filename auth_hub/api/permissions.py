@@ -23,8 +23,16 @@ def create_permissions(profile_name="System Manager"):
 	if profile_name == "system_manager":
 		create_system_manager_permission(profile_title)
 
-	if profile_name == "admin":
+	elif profile_name == "admin":
 		create_admin_permission(profile_title)
+
+	else:
+		frappe.throw(
+			(
+				f"can't create role, module profiles `{profile_name}` please choose from (Admin, System Manager)"
+			),
+			frappe.DoesNotExistError,
+		)
 
 
 def create_admin_permission(profile):
