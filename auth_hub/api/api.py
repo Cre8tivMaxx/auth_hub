@@ -135,3 +135,27 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 		# TODO: Log the error.
 		return e
 	return True
+
+@frappe.whitelist(allow_guest=True)
+def get_installed_apps():
+	"""Returns a list of installed apps
+
+	Example:
+	>>> get_installed_apps()
+	[
+	    {
+	        "app_name": "frappe",
+	        "app_version": "14.0.0"
+	    }
+	]
+
+	Returns:
+	    list: list of installed apps
+
+	Note:
+	    Accessible through <website>/api/method/auth_hub.api.get_installed_apps
+
+	"""
+	apps = frappe.get_all("Installed Application", fields=["app_name", "app_version"])
+
+	return apps
