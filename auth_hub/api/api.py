@@ -101,6 +101,7 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 
 	Args:
 		email (str): the email address for the user.
+		profile_name: The name of the Role, Module Profiles
 
 	Returns:
 		bool: True if the user was successfully created, False otherwise.
@@ -125,8 +126,11 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 
 	try:
 		profile_title = frappe.unscrub(profile_name)
-		user_updates = {email: {"role_profile_name": profile_title, "module_profile": profile_title}}
-		frappe.db.bulk_update("User", user_updates)
+		doc = frappe.get_doc("User", email)
+		doc.set("role_profile_name", profile_title)
+		doc.set("module_profile", profile_title)
+		doc.save(ignore_permissions=True)
+
 	except Exception as e:
 		# TODO: Log the error.
 		return e
