@@ -2,14 +2,14 @@ import frappe
 
 # TODO: Add EXCLUDE to a config file
 EXCLUDE = {"Guest", "All", "Administrator", "Employee"}
-
+EXISTED_PERMISSIONS = ["System Manager", "Admin"]
 
 # TODO -> let this function to be called after_install
 # TODO -> create a function `create_system_defaults` and add create_permissions inside it.
 
 
 @frappe.whitelist(allow_guest=True)
-def create_permissions(profile_name="System Manager"):
+def create_permissions(profile_name="System Manager", update=False):
 	"""Create a role profile and module profile for the given profile name
 
 	Args:
@@ -21,10 +21,10 @@ def create_permissions(profile_name="System Manager"):
 	profile_name = frappe.scrub(profile_name)
 	profile_title = frappe.unscrub(profile_name)
 	if profile_name == "system_manager":
-		create_system_manager_permission(profile_title)
+		create_system_manager_permission(profile_title, update)
 
 	elif profile_name == "admin":
-		create_admin_permission(profile_title)
+		create_admin_permission(profile_title, update)
 
 	else:
 		frappe.throw(
@@ -35,24 +35,30 @@ def create_permissions(profile_name="System Manager"):
 		)
 
 
-def create_admin_permission(profile):
+def update_existed_permissions():
+	if EXISTED_PERMISSIONS:
+		for profile in EXISTED_PERMISSIONS:
+			create_permissions(profile, update=True)
+
+
+def create_admin_permission(profile, update=False):
 	# Create Role Profile
 	roles = [r for r in frappe.get_all("Role", pluck="name") if r not in EXCLUDE]
-	_create_role_profile(profile, roles)
+	_create_role_profile(profile, roles, update)
 
 	# Create Module Profile
 	block_modules = []  # Allow all modules.
-	_create_module_profile(profile, block_modules)
+	_create_module_profile(profile, block_modules, update)
 
 
-def create_system_manager_permission(profile):
+def create_system_manager_permission(profile, update=False):
 	# Create Role Profile
 	roles = ["System Manager", "Desk User"]
-	_create_role_profile(profile, roles)
+	_create_role_profile(profile, roles, update)
 
 	# Block everything except frappe modules
 	block_modules = frappe.get_all("Module Def", filters=[["app_name", "!=", "frappe"]], pluck="name")
-	_create_module_profile(profile, block_modules)
+	_create_module_profile(profile, block_modules, update)
 
 
 # TODO
@@ -65,7 +71,7 @@ def crete_purchase_permission(profile):
 	pass
 
 
-def _create_role_profile(role_profile_name: str, roles: list):
+def _create_role_profile(role_profile_name: str, roles: list, update=False):
 	"""helper function to create a role profile with the given name and block the given list of modules
 
 	Args:
@@ -74,12 +80,16 @@ def _create_role_profile(role_profile_name: str, roles: list):
 	                                    refer to `Role` DocType.
 	"""
 	if frappe.db.exists("Role Profile", role_profile_name):
-		# TODO: This one may update the role profile
-		return
+		if not update:
+			return
 
-	# Clear existing roles in the profile
-	role_profile = frappe.get_doc(doctype="Role Profile", role_profile=role_profile_name)
-	role_profile.set("roles", [])
+		# Load Existing Profile
+		role_profile = frappe.get_doc("Role Profile", role_profile_name)
+		role_profile.set("roles", [])
+	else:
+		# Create a new profile
+		role_profile = frappe.get_doc(doctype="Role Profile", role_profile=role_profile_name)
+
 	for role in roles:
 		if frappe.db.exists("Role", role):
 			role_profile.append("roles", {"role": role})
@@ -87,7 +97,7 @@ def _create_role_profile(role_profile_name: str, roles: list):
 	role_profile.save(ignore_permissions=True)
 
 
-def _create_module_profile(m_profile_name: str, block_modules: list):
+def _create_module_profile(m_profile_name: str, block_modules: list, update=False):
 	"""helper function to create a module profile with the given name and block the given list of modules
 
 	Args:
@@ -96,15 +106,23 @@ def _create_module_profile(m_profile_name: str, block_modules: list):
 	    if block_modules = ["Accounts", "Buying"] then the module profile will have all permissions except ["Accounts", "Buying"]
 	"""
 	if frappe.db.exists("Module Profile", m_profile_name):
-		return
+		if not update:
+			return
+			# Load an existing module profile
+		module_profile = frappe.get_doc("Module Profile", m_profile_name)
+		module_profile.set("block_modules", [])
+	else:
+		# Create a new module profile
 
-	module_profile = frappe.get_doc(
-		{
-			"doctype": "Module Profile",
-			"module_profile_name": m_profile_name,
-			"block_modules": [{"module": m} for m in block_modules],
-		}
-	)
+		module_profile = frappe.get_doc(
+			{
+				"doctype": "Module Profile",
+				"module_profile_name": m_profile_name,
+				"block_modules": [],
+			}
+		)
+	for module in block_modules:
+		module_profile.append("block_modules", {"module": module})
 
 	module_profile.save(ignore_permissions=True)
 

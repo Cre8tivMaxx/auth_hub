@@ -97,7 +97,7 @@ after_install = "auth_hub.install.after_install"
 # Name of the app being installed is passed as an argument
 
 # before_app_install = "auth_hub.utils.before_app_install"
-# after_app_install = "auth_hub.utils.after_app_install"
+after_app_install = "auth_hub.install.after_app_install"
 
 # Integration Cleanup
 # -------------------
