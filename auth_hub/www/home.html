@@ -1,4 +1,12 @@
-<h1>Hello</h1>
-{%for site in sites%}
-<p>{{site}}</p>
-{%endfor%}
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div id="root"></div>
+{% endblock %}
+
+{% block script %}
+{{ include_script("auth_hub.bundle.js") }}
+<script>
+  window.auth_hub.home(document.getElementById("root"));
+</script>
+{% endblock %}
