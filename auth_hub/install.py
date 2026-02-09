@@ -1,7 +1,7 @@
 import frappe
 from frappe.utils.password import set_encrypted_password
 
-from auth_hub.api.permissions import create_permissions
+from auth_hub.api.permissions import create_permissions, update_existed_permissions
 
 
 def after_install():
@@ -14,6 +14,19 @@ def after_install():
 	# Create Domain and Email Account
 	create_email_account()
 	create_email_domain()
+
+
+def after_app_install(app_name=None):
+	"""
+	After a new app installed on the site, update the permissions to include this app.
+
+	for example if erpnext is installed on the site, we need to update permissions
+	to include ERPNext's modules in the `Admin` module profile, role profile.
+
+	Args:
+		app_name (_type_, optional): the new installed application name. Defaults to None.
+	"""
+	update_existed_permissions()
 
 
 def create_email_domain():
