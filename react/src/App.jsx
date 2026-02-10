@@ -1,6 +1,4 @@
 import React from "react";
-
-// App.jsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./Components/Layout"
 import Home from "./pages/Home.jsx";

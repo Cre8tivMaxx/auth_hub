@@ -29,8 +29,8 @@ app_license = "mit"
 # app_include_js = "/assets/auth_hub/js/auth_hub.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/auth_hub/css/auth_hub.css"
-# web_include_js = "/assets/auth_hub/js/auth_hub.js"
+web_include_css = "/assets/auth_hub/css/auth_hub.css"
+web_include_js = "/assets/auth_hub/js/auth_hub.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "auth_hub/public/scss/website"
