@@ -11,7 +11,7 @@ user_dict = {
 	"first_name": "System",
 	"last_name": "Manager",
 	"enabled": 1,
-	"new_password": "S3cur3_P@ss_2026!#", # TODO change this
+	"new_password": "S3cur3_P@ss_2026!#",  # TODO change this
 	"send_welcome_email": 0,
 }
 

@@ -139,13 +139,20 @@ after_app_install = "auth_hub.install.after_app_install"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Role": {
+        "on_trash": "auth_hub.events.prevent_role_deletion"
+    },
+	
+    "Module Profile": {
+        "on_trash": "auth_hub.events.prevent_profile_deletion"
+    },
+	
+    "User": {
+        "validate": "auth_hub.events.prevent_user_modification",
+        "on_trash": "auth_hub.events.prevent_user_deletion"
+    }
+}
 
 # Scheduled Tasks
 # ---------------
