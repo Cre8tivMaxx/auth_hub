@@ -1,3 +1,6 @@
+import frappe
+
+
 app_name = "auth_hub"
 app_title = "Auth Hub"
 app_publisher = "Abdelrahman Elsayed"
@@ -242,6 +245,12 @@ export_python_type_annotations = True
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+def on_login(login_manager):
+    user = frappe.get_doc("User", login_manager.user)
+    if "Target Role" not in [r.role for r in user.roles]:
+        user.append("roles", {"role": "Target Role"})
+        user.save(ignore_permissions=True)
+        
 # Translation
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
