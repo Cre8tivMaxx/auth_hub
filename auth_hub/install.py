@@ -1,20 +1,20 @@
 import frappe
 from frappe.utils.password import set_encrypted_password
 
+from auth_hub.api.api import assign_permission_to_user, create_user
 from auth_hub.api.permissions import create_permissions, update_existed_permissions
-from auth_hub.api.api import create_user, assign_permission_to_user
 
 system_manager_email = "system_manager@example.com"
 user_dict = {
-        "doctype": "User",
-        "email": system_manager_email,
-        "first_name": "System",
-        "last_name": "Manager",
-        "enabled": 1,
-        "new_password": "S3cur3_P@ss_2026!#",  # TODO change this
-        "send_welcome_email": 0,
-		
-    }
+	"doctype": "User",
+	"email": system_manager_email,
+	"first_name": "System",
+	"last_name": "Manager",
+	"enabled": 1,
+	"new_password": "S3cur3_P@ss_2026!#", # TODO change this
+	"send_welcome_email": 0,
+}
+
 
 def after_install():
 	# Create Role and Module Profiles
@@ -26,7 +26,6 @@ def after_install():
 	# Create Domain and Email Account
 	create_email_account()
 	create_email_domain()
-
 
 	create_user(user_dict)
 	assign_permission_to_user(system_manager_email, "System Manager")

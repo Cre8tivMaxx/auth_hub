@@ -136,6 +136,7 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 		return e
 	return True
 
+
 @frappe.whitelist(allow_guest=True)
 def get_installed_apps():
 	"""Returns a list of installed apps
