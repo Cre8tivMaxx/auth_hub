@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git log:*)",
+      "Bash(gh project:*)",
+      "Bash(gh api:*)",
+      "Skill(commit-commands:commit)"
+    ]
+  }
+}
