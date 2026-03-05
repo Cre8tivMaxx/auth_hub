@@ -5,6 +5,25 @@ from auth_hub.api.permissions import create_permissions, ensure_permission_exist
 # TODO: Setup a logger that log errors, messages inside (logs/auth_hub.error.log, logs/auth_hub.log)
 
 
+def _validate_token():
+	"""Validate the X-Auth-Token request header against site config.
+
+	Reads `auth_hub_token` from site_config.json (frappe.conf) and compares
+	it to the incoming X-Auth-Token header.
+
+	Raises:
+		frappe.AuthenticationError: if the token is missing or does not match.
+
+	Note:
+		Set the token on each child site with:
+		    bench --site <sitename> set-config auth_hub_token <random-long-string>
+	"""
+	token = frappe.request.headers.get("X-Auth-Token")
+	expected = frappe.conf.get("auth_hub_token")
+	if not token or not expected or token != expected:
+		frappe.throw("Invalid or missing X-Auth-Token", frappe.AuthenticationError)
+
+
 @frappe.whitelist(allow_guest=True)
 def ping():
 	"""Ping the site to make sure the APIs works.
@@ -55,6 +74,7 @@ def create_user(user: dict):
 	Note:
 		Accessible through <website>/api/method/auth_hub.api.create_user?user={user}
 	"""
+	_validate_token()
 	try:
 		frappe.get_doc(user).insert(ignore_permissions=True)
 	except Exception:
@@ -63,7 +83,7 @@ def create_user(user: dict):
 	return True
 
 
-@frappe.whitelist(True)
+@frappe.whitelist(allow_guest=True)
 def create_temp_login_link(email: str, expiry: float = 1.5):
 	"""create a temp login link for user using his email
 
@@ -78,6 +98,7 @@ def create_temp_login_link(email: str, expiry: float = 1.5):
 	Note:
 		Acessible through <website>/api/method/auth_hub.api.api.create_temp_login_link?email={test@example.com}
 	"""
+	_validate_token()
 	if not frappe.db.exists("User", email):
 		frappe.throw(
 			(f"User with email address {email} does not exist"),
@@ -109,6 +130,7 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 	Note:
 		Accessible through <website>/api/method/auth_hub.api.assign_permission_to_user?email={email}&profile_name={admin or system_manager}
 	"""
+	_validate_token()
 	if not ensure_signed_up(email):
 		frappe.throw(
 			(f"User with email address {email} does not exist"),
@@ -135,6 +157,51 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 		# TODO: Log the error.
 		return e
 	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def disable_user(email: str):
+	"""Disable a user account on this site.
+
+	Args:
+		email (str): The email address of the user to disable.
+
+	Returns:
+		bool: True if the user was successfully disabled.
+
+	Note:
+		Accessible through <website>/api/method/auth_hub.api.api.disable_user
+	"""
+	_validate_token()
+	if not frappe.db.exists("User", email):
+		frappe.throw(f"User with email address {email} does not exist", frappe.DoesNotExistError)
+
+	frappe.db.set_value("User", email, "enabled", 0)
+	frappe.db.commit()
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
+def enable_user(email: str):
+	"""Enable a user account on this site.
+
+	Args:
+		email (str): The email address of the user to enable.
+
+	Returns:
+		bool: True if the user was successfully enabled.
+
+	Note:
+		Accessible through <website>/api/method/auth_hub.api.api.enable_user
+	"""
+	_validate_token()
+	if not frappe.db.exists("User", email):
+		frappe.throw(f"User with email address {email} does not exist", frappe.DoesNotExistError)
+
+	frappe.db.set_value("User", email, "enabled", 1)
+	frappe.db.commit()
+	return True
+
 
 @frappe.whitelist(allow_guest=True)
 def get_installed_apps():
