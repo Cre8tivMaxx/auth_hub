@@ -58,6 +58,7 @@ def ensure_signed_up(email):
 	Note:
 		Accessible through <website>/api/method/auth_hub.api.ensure_signed_up?email={email}
 	"""
+	_validate_token()
 	return bool(frappe.db.exists("User", email))
 
 
@@ -78,8 +79,8 @@ def create_user(user: dict):
 	try:
 		frappe.get_doc(user).insert(ignore_permissions=True)
 	except Exception:
-		# TODO: Log the error.
-		return False
+		frappe.log_error(title="auth_hub.create_user")
+		frappe.throw("Could not create user on hub site", frappe.ValidationError)
 	return True
 
 
@@ -153,9 +154,12 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 		doc.set("module_profile", profile_title)
 		doc.save(ignore_permissions=True)
 
-	except Exception as e:
-		# TODO: Log the error.
-		return e
+	except Exception:
+		frappe.log_error(title=f"auth_hub.assign_permission_to_user [{email}]")
+		frappe.throw(
+			f"Could not assign profile `{profile_name}` to {email}",
+			frappe.ValidationError,
+		)
 	return True
 
 
@@ -223,6 +227,7 @@ def get_installed_apps():
 	    Accessible through <website>/api/method/auth_hub.api.get_installed_apps
 
 	"""
+	_validate_token()
 	apps = frappe.get_all("Installed Application", fields=["app_name", "app_version"])
 
 	return apps
