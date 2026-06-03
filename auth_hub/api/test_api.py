@@ -68,3 +68,42 @@ class TestAssignPermissionFailure(FrappeTestCase):
 		):
 			with self.assertRaises(frappe.ValidationError):
 				api.assign_permission_to_user(self.email, "Admin")
+
+
+class TestUpdateUser(FrappeTestCase):
+	def setUp(self):
+		self.email = "update-target@example.com"
+		if not frappe.db.exists("User", self.email):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": self.email,
+					"first_name": "Before",
+					"send_welcome_email": 0,
+				}
+			).insert(ignore_permissions=True)
+
+	def test_rejects_missing_token(self):
+		with (
+			patch.object(frappe, "request", _req(None)),
+			patch.dict(frappe.conf, {"auth_hub_token": TOKEN}),
+		):
+			with self.assertRaises(frappe.AuthenticationError):
+				api.update_user({"email": self.email, "first_name": "After"})
+
+	def test_unknown_user_raises(self):
+		with (
+			patch.object(frappe, "request", _req(TOKEN)),
+			patch.dict(frappe.conf, {"auth_hub_token": TOKEN}),
+		):
+			with self.assertRaises(frappe.DoesNotExistError):
+				api.update_user({"email": "nobody-here@example.com", "first_name": "X"})
+
+	def test_updates_existing_user(self):
+		with (
+			patch.object(frappe, "request", _req(TOKEN)),
+			patch.dict(frappe.conf, {"auth_hub_token": TOKEN}),
+		):
+			result = api.update_user({"email": self.email, "first_name": "After"})
+		self.assertTrue(result)
+		self.assertEqual(frappe.db.get_value("User", self.email, "first_name"), "After")

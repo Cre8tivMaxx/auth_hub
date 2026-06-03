@@ -85,6 +85,38 @@ def create_user(user: dict):
 
 
 @frappe.whitelist(allow_guest=True)
+def update_user(user: dict):
+	"""Update an existing user on this site with a replicated profile.
+
+	Args:
+		user (dict): dict of user's data, typically from
+			`frappe.get_doc("User", email).as_dict()` on the consumer side.
+			Must carry an "email" (or "name") identifying an existing user.
+
+	Returns:
+		bool: True if the user was successfully updated.
+
+	Note:
+		Accessible through <website>/api/method/auth_hub.api.api.update_user
+	"""
+	_validate_token()
+	email = user.get("email") or user.get("name")
+	if not email or not frappe.db.exists("User", email):
+		frappe.throw(
+			f"User with email address {email} does not exist",
+			frappe.DoesNotExistError,
+		)
+	try:
+		doc = frappe.get_doc("User", email)
+		doc.update(user)
+		doc.save(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(title=f"auth_hub.update_user [{email}]")
+		frappe.throw("Could not update user on hub site", frappe.ValidationError)
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
 def create_temp_login_link(email: str, expiry: float = 1.5):
 	"""create a temp login link for user using his email
 
