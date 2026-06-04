@@ -170,26 +170,37 @@ def assign_permission_to_user(email: str, profile_name="Admin"):
 			frappe.DoesNotExistError,
 		)
 
-	if not ensure_permission_exists(profile_name):
-		try:
+	# Normalize: "cre8tiv_maxx_team" → "Cre8tiv Maxx Team", "Admin" → "Admin"
+	profile_title = frappe.unscrub(frappe.scrub(profile_name))
+
+	role_profile_exists = bool(frappe.db.exists("Role Profile", profile_title))
+
+	if not role_profile_exists:
+		if frappe.scrub(profile_name) in ("admin", "system_manager"):
+			# Built-in profile — create it if missing
 			create_permissions(profile_name)
-		except frappe.DoesNotExistError:
+		else:
+			# Custom profile — must already exist on this site
+			frappe.log_error(
+				title=f"auth_hub.assign_permission_to_user: Role Profile '{profile_title}' not found on this site"
+			)
 			frappe.throw(
-				(f"Role or module profiles `{profile_name}` is not exists"),
+				f"Role Profile `{profile_title}` does not exist on this site. Create it first.",
 				frappe.DoesNotExistError,
 			)
 
 	try:
-		profile_title = frappe.unscrub(profile_name)
 		doc = frappe.get_doc("User", email)
 		doc.set("role_profile_name", profile_title)
-		doc.set("module_profile", profile_title)
+		# Only set module_profile if one with this name exists — avoid LinkValidationError
+		if frappe.db.exists("Module Profile", profile_title):
+			doc.set("module_profile", profile_title)
 		doc.save(ignore_permissions=True)
 
 	except Exception:
 		frappe.log_error(title=f"auth_hub.assign_permission_to_user [{email}]")
 		frappe.throw(
-			f"Could not assign profile `{profile_name}` to {email}",
+			f"Could not assign profile `{profile_title}` to {email}",
 			frappe.ValidationError,
 		)
 	return True
